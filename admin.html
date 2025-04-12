@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Admin Dashboard</title>
   <style>
+
     :root {
       --primary: #4361ee;
       --secondary: #3f37c9;
@@ -147,8 +148,10 @@
       color: var(--dark);
     }
   </style>
+  </style>
 </head>
 <body>
+  <!-- Header -->
   <header>
     <img src="assets/logo.png" alt="Logo">
     <h1>Admin Dashboard</h1>
@@ -156,7 +159,9 @@
     <button class="logout" onclick="logout()">Logout</button>
   </header>
 
+  <!-- Main container -->
   <div class="container">
+    <!-- Dashboard Stats -->
     <div class="card">
       <div><h3>Total Users</h3><span id="totalUsers">0</span></div>
       <div><h3>Total Submissions</h3><span id="totalSub">0</span></div>
@@ -164,22 +169,25 @@
       <div><h3>Rejected</h3><span id="rejectedCount">0</span></div>
     </div>
 
+    <!-- Deadline Section -->
     <div class="section">
       <h2>Set Submission Deadline</h2>
       <input type="date" id="deadlineDate">
       <button onclick="setDeadline()">Set Deadline</button>
     </div>
 
+    <!-- User List -->
     <div class="section">
       <h2>User List</h2>
       <table>
         <thead>
-          <tr><th>Name</th><th>Email</th><th>Phone</th><th>Location</th><th>Approved</th><th>Actions</th></tr>
+          <tr><th>Name</th><th>Email</th><th>Phone</th><th>Location</th><th>Approved</th><th>Drive Link</th><th>Actions</th></tr>
         </thead>
         <tbody id="userTable"></tbody>
       </table>
     </div>
 
+    <!-- Submissions -->
     <div class="section">
       <h2>Submission List</h2>
       <table>
@@ -200,6 +208,7 @@
       </table>
     </div>
 
+    <!-- Payment -->
     <div class="section">
       <h2>Payment Status</h2>
       <input type="text" id="weekNo" placeholder="Week No">
@@ -213,6 +222,7 @@
       <button onclick="addPayment()">Add Payment</button>
     </div>
 
+    <!-- Payment History -->
     <div class="section">
       <h2>Payment History</h2>
       <table>
@@ -267,6 +277,7 @@
         userSelect.innerHTML = '<option value="">Select User</option>';
         snapshot.forEach(doc => {
           const user = doc.data();
+          const uid = doc.id;
           const row = `
             <tr>
               <td>${user.name || '-'}</td>
@@ -275,16 +286,27 @@
               <td>${user.location || '-'}</td>
               <td>${user.approved ? 'Yes' : 'No'}</td>
               <td>
-                ${!user.approved ? `<button onclick="approveUser('${doc.id}')">Approve</button>` : ''}
-                <button class="reject" onclick="deleteUser('${doc.id}')">Delete</button>
+                <input type="text" id="drive-${uid}" class="drive-link-input" placeholder="Drive folder URL" value="${user.driveLink || ''}" />
+                <button class="update-link-btn" onclick="updateDriveLink('${uid}')">Update</button>
+              </td>
+              <td>
+                ${!user.approved ? `<button onclick="approveUser('${uid}')">Approve</button>` : ''}
+                <button class="reject" onclick="deleteUser('${uid}')">Delete</button>
               </td>
             </tr>
           `;
           table.innerHTML += row;
           if (user.approved) {
-            userSelect.innerHTML += `<option value="${doc.id}">${user.name || user.email}</option>`;
+            userSelect.innerHTML += `<option value="${uid}">${user.name || user.email}</option>`;
           }
         });
+      });
+    }
+
+    function updateDriveLink(uid) {
+      const link = document.getElementById(`drive-${uid}`).value.trim();
+      db.collection('users').doc(uid).update({ driveLink: link }).then(() => {
+        alert('Drive link updated!');
       });
     }
 
