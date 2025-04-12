@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sign Up - Ebook Portal</title>
+  <style>
+    :root {
+      --primary: #4361ee;
+      --secondary: #3f37c9;
+      --danger: #f72585;
+      --dark: #212529;
+      --light: #f8f9fa;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: var(--light);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .signup-container {
+      width: 100%;
+      max-width: 450px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      padding: 30px;
+    }
+
+    .signup-container h2 {
+      text-align: center;
+      color: var(--dark);
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--dark);
+      font-weight: 500;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 15px;
+    }
+
+    .btn {
+      width: 100%;
+      background: var(--primary);
+      color: white;
+      padding: 12px;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    .btn:hover {
+      background: var(--secondary);
+    }
+
+    .message {
+      text-align: center;
+      margin-top: 15px;
+      color: var(--danger);
+      font-size: 14px;
+    }
+
+    .logo {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .logo img {
+      max-width: 120px;
+    }
+  </style>
+</head>
+<body>
+  <div class="signup-container">
+    <div class="logo">
+      <img src="logo.png" alt="Logo">
+    </div>
+    <h2>Create an Account</h2>
+    <form id="signupForm">
+      <div class="form-group">
+        <label for="name">Full Name</label>
+        <input type="text" id="name" required>
+      </div>
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input type="email" id="email" required>
+      </div>
+      <div class="form-group">
+        <label for="phone">Phone Number</label>
+        <input type="text" id="phone">
+      </div>
+      <div class="form-group">
+        <label for="location">Location</label>
+        <input type="text" id="location">
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" required>
+      </div>
+      <button type="submit" class="btn">Sign Up</button>
+      <div class="message" id="messageBox"></div>
+    </form>
+  </div>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCa901ltphAF64KQGZwg7AdZjkJojrM03E",
+      authDomain: "weekly-ebook.firebaseapp.com",
+      projectId: "weekly-ebook"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    document.getElementById("signupForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+
+      const name = document.getElementById("name").value;
+      const email = document.getElementById("email").value;
+      const phone = document.getElementById("phone").value;
+      const location = document.getElementById("location").value;
+      const password = document.getElementById("password").value;
+      const messageBox = document.getElementById("messageBox");
+
+      messageBox.textContent = "";
+
+      auth.createUserWithEmailAndPassword(email, password)
+        .then(cred => {
+          return db.collection("users").doc(cred.user.uid).set({
+            name,
+            email,
+            phone,
+            location,
+            role: "user",
+            approved: false,
+            createdAt: new Date()
+          });
+        })
+        .then(() => {
+          messageBox.style.color = "green";
+          messageBox.textContent = "Account created. Waiting for admin approval.";
+          auth.signOut();
+          setTimeout(() => {
+            window.location.href = "index.html";
+          }, 2000);
+        })
+        .catch(error => {
+          messageBox.textContent = error.message;
+        });
+    });
+  </script>
+</body>
+</html>
