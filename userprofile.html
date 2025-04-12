@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>User Profile</title>
+  <style>
+    :root {
+      --primary: #4361ee;
+      --dark: #212529;
+      --light: #f8f9fa;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: var(--light);
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: auto;
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+      text-align: center;
+      color: var(--primary);
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin: 10px 0 5px;
+      color: var(--dark);
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    input[readonly] {
+      background: #f1f1f1;
+      color: #555;
+    }
+
+    button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 12px;
+      width: 100%;
+      border-radius: 5px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .message {
+      margin-top: 10px;
+      text-align: center;
+      color: green;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Update Profile</h2>
+    <form id="profileForm">
+      <label>Email</label>
+      <input type="email" id="email" readonly />
+
+      <label>Name</label>
+      <input type="text" id="name" required />
+
+      <label>Phone Number</label>
+      <input type="text" id="phone" />
+
+      <label>Location</label>
+      <input type="text" id="location" />
+
+      <button type="submit">Update Profile</button>
+      <div class="message" id="message"></div>
+    </form>
+  </div>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCa901ltphAF64KQGZwg7AdZjkJojrM03E",
+      authDomain: "weekly-ebook.firebaseapp.com",
+      projectId: "weekly-ebook"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    const nameInput = document.getElementById('name');
+    const phoneInput = document.getElementById('phone');
+    const locationInput = document.getElementById('location');
+    const emailInput = document.getElementById('email');
+    const message = document.getElementById('message');
+
+    auth.onAuthStateChanged(user => {
+      if (!user) return window.location.href = 'index.html';
+      const uid = user.uid;
+      emailInput.value = user.email;
+
+      db.collection('users').doc(uid).get().then(doc => {
+        if (doc.exists) {
+          const data = doc.data();
+          nameInput.value = data.name || '';
+          phoneInput.value = data.phone || '';
+          locationInput.value = data.location || '';
+        }
+      });
+
+      document.getElementById('profileForm').addEventListener('submit', e => {
+        e.preventDefault();
+        db.collection('users').doc(uid).set({
+          email: user.email,
+          name: nameInput.value,
+          phone: phoneInput.value,
+          location: locationInput.value
+        }, { merge: true }).then(() => {
+          message.textContent = 'Profile updated successfully!';
+        });
+      });
+    });
+  </script>
+</body>
+</html>
