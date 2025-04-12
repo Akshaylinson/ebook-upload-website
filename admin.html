@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Dashboard</title>
+  <style>
+    :root {
+      --primary: #4361ee;
+      --secondary: #3f37c9;
+      --danger: #f72585;
+      --success: #2ecc71;
+      --dark: #212529;
+      --light: #f1f3f5;
+      --warning: #f39c12;
+      --rejected: #e74c3c;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      background: var(--light);
+    }
+
+    header {
+      background: var(--primary);
+      color: white;
+      padding: 20px;
+      text-align: center;
+      position: relative;
+    }
+
+    header img {
+      max-width: 80px;
+    }
+
+    .logout, .analytics-btn {
+      position: absolute;
+      top: 20px;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 5px;
+      color: white;
+      cursor: pointer;
+    }
+
+    .logout {
+      right: 20px;
+      background: #222;
+    }
+
+    .analytics-btn {
+      right: 100px;
+      background: var(--secondary);
+    }
+
+    .container {
+      padding: 20px;
+      max-width: 1100px;
+      margin: auto;
+    }
+
+    h2 {
+      margin-top: 30px;
+      color: var(--dark);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    table th, table td {
+      padding: 12px;
+      border: 1px solid #eee;
+      text-align: left;
+    }
+
+    .section {
+      margin-bottom: 40px;
+    }
+
+    input, select, button {
+      padding: 8px 12px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      margin-right: 5px;
+    }
+
+    button {
+      background: var(--primary);
+      color: white;
+      cursor: pointer;
+    }
+
+    button.reject {
+      background: var(--danger);
+    }
+
+    select.status-dropdown {
+      border: 2px solid transparent;
+      font-weight: bold;
+      color: white;
+    }
+
+    .status-approved {
+      background-color: var(--success);
+    }
+
+    .status-pending {
+      background-color: var(--warning);
+    }
+
+    .status-rejected {
+      background-color: var(--rejected);
+    }
+
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      flex-wrap: wrap;
+    }
+
+    .card div {
+      flex: 1;
+      text-align: center;
+      min-width: 180px;
+      margin: 10px 0;
+    }
+
+    .card h3 {
+      margin: 0;
+      color: var(--primary);
+    }
+
+    .card span {
+      font-size: 18px;
+      color: var(--dark);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="assets/logo.png" alt="Logo">
+    <h1>Admin Dashboard</h1>
+    <button class="analytics-btn" onclick="window.location.href='analytics.html'">Analytics</button>
+    <button class="logout" onclick="logout()">Logout</button>
+  </header>
+
+  <div class="container">
+    <div class="card">
+      <div><h3>Total Users</h3><span id="totalUsers">0</span></div>
+      <div><h3>Total Submissions</h3><span id="totalSub">0</span></div>
+      <div><h3>Approved</h3><span id="approvedCount">0</span></div>
+      <div><h3>Rejected</h3><span id="rejectedCount">0</span></div>
+    </div>
+
+    <div class="section">
+      <h2>Set Submission Deadline</h2>
+      <input type="date" id="deadlineDate">
+      <button onclick="setDeadline()">Set Deadline</button>
+    </div>
+
+    <div class="section">
+      <h2>User List</h2>
+      <table>
+        <thead>
+          <tr><th>Name</th><th>Email</th><th>Phone</th><th>Location</th><th>Approved</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="userTable"></tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <h2>Submission List</h2>
+      <table>
+        <thead>
+          <tr><th>Title</th><th>Category</th><th>Date</th><th>Link</th><th>Status</th><th>User</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="submissionTable"></tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <h2>Payment Status</h2>
+      <input type="text" id="weekNo" placeholder="Week No">
+      <input type="text" id="month" placeholder="Month">
+      <input type="number" id="amount" placeholder="Amount Paid">
+      <select id="paymentStatus">
+        <option value="Paid">Paid</option>
+        <option value="Unpaid">Unpaid</option>
+      </select>
+      <select id="paymentUser" required></select>
+      <button onclick="addPayment()">Add Payment</button>
+    </div>
+  </div>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCa901ltphAF64KQGZwg7AdZjkJojrM03E",
+      authDomain: "weekly-ebook.firebaseapp.com",
+      projectId: "weekly-ebook"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    function logout() {
+      auth.signOut().then(() => window.location.href = 'index.html');
+    }
+
+    function setDeadline() {
+      const date = document.getElementById('deadlineDate').value;
+      if (date) {
+        db.collection('settings').doc('submissionDeadline').set({ date });
+        alert('Deadline set!');
+      }
+    }
+
+    function loadUsers() {
+      db.collection('users').get().then(snapshot => {
+        const table = document.getElementById('userTable');
+        const userSelect = document.getElementById('paymentUser');
+        document.getElementById('totalUsers').textContent = snapshot.size;
+        table.innerHTML = '';
+        userSelect.innerHTML = '<option value="">Select User</option>';
+        snapshot.forEach(doc => {
+          const user = doc.data();
+          const row = `
+            <tr>
+              <td>${user.name || '-'}</td>
+              <td>${user.email}</td>
+              <td>${user.phone || '-'}</td>
+              <td>${user.location || '-'}</td>
+              <td>${user.approved ? 'Yes' : 'No'}</td>
+              <td>
+                ${!user.approved ? `<button onclick="approveUser('${doc.id}')">Approve</button>` : ''}
+                <button class="reject" onclick="deleteUser('${doc.id}')">Delete</button>
+              </td>
+            </tr>
+          `;
+          table.innerHTML += row;
+          if (user.approved) {
+            userSelect.innerHTML += `<option value="${doc.id}">${user.name || user.email}</option>`;
+          }
+        });
+      });
+    }
+
+    function approveUser(uid) {
+      db.collection('users').doc(uid).update({ approved: true })
+        .then(() => {
+          alert('User approved!');
+          loadUsers();
+        });
+    }
+
+    function deleteUser(uid) {
+      if (confirm("Are you sure you want to delete this user?")) {
+        db.collection('users').doc(uid).delete().then(() => {
+          alert('User deleted.');
+          loadUsers();
+        });
+      }
+    }
+
+    function loadSubmissions() {
+      const table = document.getElementById('submissionTable');
+      let total = 0, approved = 0, rejected = 0;
+      table.innerHTML = '';
+
+      db.collection('submissions').onSnapshot(async snapshot => {
+        table.innerHTML = '';
+        const userCache = {};
+
+        for (const doc of snapshot.docs) {
+          const sub = doc.data();
+          total++;
+          if (sub.status === 'Approved') approved++;
+          if (sub.status === 'Rejected') rejected++;
+
+          let userName = 'Unknown';
+          const uid = sub.uid;
+
+          if (uid) {
+            if (!userCache[uid]) {
+              const userDoc = await db.collection('users').doc(uid).get();
+              if (userDoc.exists) {
+                userCache[uid] = userDoc.data().name || userDoc.data().email || 'Unnamed';
+              } else {
+                userCache[uid] = 'Not Found';
+              }
+            }
+            userName = userCache[uid];
+          }
+
+          let statusClass = '';
+          if (sub.status === 'Approved') statusClass = 'status-approved';
+          else if (sub.status === 'Rejected') statusClass = 'status-rejected';
+          else statusClass = 'status-pending';
+
+          table.innerHTML += `
+            <tr>
+              <td>${sub.title}</td>
+              <td>${sub.category}</td>
+              <td>${sub.date}</td>
+              <td><a href="${sub.link}" target="_blank">View</a></td>
+              <td>
+                <select class="status-dropdown ${statusClass}" onchange="updateStatus('${doc.id}', this.value)">
+                  <option value="Pending" ${sub.status === 'Pending' ? 'selected' : ''}>Pending</option>
+                  <option value="Approved" ${sub.status === 'Approved' ? 'selected' : ''}>Approved</option>
+                  <option value="Rejected" ${sub.status === 'Rejected' ? 'selected' : ''}>Rejected</option>
+                </select>
+              </td>
+              <td>${userName}</td>
+              <td><button class="reject" onclick="deleteSubmission('${doc.id}')">Delete</button></td>
+            </tr>
+          `;
+        }
+
+        document.getElementById('totalSub').textContent = total;
+        document.getElementById('approvedCount').textContent = approved;
+        document.getElementById('rejectedCount').textContent = rejected;
+      });
+    }
+
+    function updateStatus(id, status) {
+      db.collection('submissions').doc(id).update({ status });
+    }
+
+    function deleteSubmission(id) {
+      if (confirm("Are you sure you want to delete this submission?")) {
+        db.collection('submissions').doc(id).delete().then(() => {
+          alert('Submission deleted.');
+        });
+      }
+    }
+
+    function addPayment() {
+      const uid = document.getElementById('paymentUser').value;
+      const week = document.getElementById('weekNo').value;
+      const month = document.getElementById('month').value;
+      const amount = document.getElementById('amount').value;
+      const status = document.getElementById('paymentStatus').value;
+
+      if (uid && week && month && amount) {
+        db.collection('users').doc(uid).collection('payments').add({
+          week, month, amount, status, timestamp: new Date()
+        });
+        alert('Payment status added!');
+      }
+    }
+
+    auth.onAuthStateChanged(user => {
+      if (!user) window.location.href = 'index.html';
+      else {
+        loadUsers();
+        loadSubmissions();
+      }
+    });
+  </script>
+</body>
+</html>
