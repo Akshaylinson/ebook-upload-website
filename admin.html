@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Admin Dashboard</title>
   <style>
-    
     :root {
       --primary: #4361ee;
       --secondary: #3f37c9;
@@ -226,15 +225,12 @@
             <th>User Name</th>
           </tr>
         </thead>
-        <tbody id="paymentTable">
-          <!-- Populated by JS -->
-        </tbody>
+        <tbody id="paymentTable"></tbody>
       </table>
     </div>
-
   </div>
 
-  <!-- Firebase SDKs -->
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
@@ -293,11 +289,10 @@
     }
 
     function approveUser(uid) {
-      db.collection('users').doc(uid).update({ approved: true })
-        .then(() => {
-          alert('User approved!');
-          loadUsers();
-        });
+      db.collection('users').doc(uid).update({ approved: true }).then(() => {
+        alert('User approved!');
+        loadUsers();
+      });
     }
 
     function deleteUser(uid) {
@@ -313,11 +308,10 @@
       const table = document.getElementById('submissionTable');
       let total = 0, approved = 0, rejected = 0;
       table.innerHTML = '';
+      const userCache = {};
 
       db.collection('submissions').onSnapshot(async snapshot => {
         table.innerHTML = '';
-        const userCache = {};
-
         for (const doc of snapshot.docs) {
           const sub = doc.data();
           total++;
@@ -326,7 +320,6 @@
 
           let userName = 'Unknown';
           const uid = sub.uid;
-
           if (uid) {
             if (!userCache[uid]) {
               const userDoc = await db.collection('users').doc(uid).get();
@@ -393,70 +386,60 @@
       if (uid && week && month && amount) {
         db.collection('users').doc(uid).collection('payments').add({
           week, month, amount, status, timestamp: new Date()
+        }).then(() => {
+          alert('Payment status added!');
+          loadPaymentHistory();
         });
-        alert('Payment status added!');
       }
     }
 
+    function loadPaymentHistory() {
+      const table = document.getElementById('paymentTable');
+      table.innerHTML = '';
+      const userCache = {};
+
+      db.collection('users').get().then(snapshot => {
+        const promises = [];
+
+        snapshot.forEach(userDoc => {
+          const uid = userDoc.id;
+          const userName = userDoc.data().name || userDoc.data().email || 'Unnamed';
+          userCache[uid] = userName;
+
+          promises.push(
+            db.collection('users').doc(uid).collection('payments').get().then(paymentSnap => {
+              paymentSnap.forEach(paymentDoc => {
+                const payment = paymentDoc.data();
+                table.innerHTML += `
+                  <tr>
+                    <td>${payment.week || '-'}</td>
+                    <td>${payment.month || '-'}</td>
+                    <td>${payment.amount || '0'}</td>
+                    <td>${payment.status || '-'}</td>
+                    <td>${userName}</td>
+                  </tr>
+                `;
+              });
+            })
+          );
+        });
+
+        Promise.all(promises).then(() => {
+          console.log("Payment history loaded.");
+        });
+      });
+    }
+
+    // ✅ Auth check + data loading
     auth.onAuthStateChanged(user => {
-      if (!user) window.location.href = 'index.html';
-      else {
+      if (!user) {
+        window.location.href = 'index.html';
+      } else {
         loadUsers();
         loadSubmissions();
+        loadPaymentHistory();
       }
-    })
-    
-  function loadPaymentHistory() {
-    const table = document.getElementById('paymentTable');
-    table.innerHTML = '';
-
-    const userCache = {};
-
-    db.collection('users').get().then(snapshot => {
-      const promises = [];
-
-      snapshot.forEach(userDoc => {
-        const userData = userDoc.data();
-        const uid = userDoc.id;
-        const userName = userData.name || userData.email || 'Unnamed';
-        userCache[uid] = userName;
-
-        const paymentsRef = db.collection('users').doc(uid).collection('payments');
-        promises.push(
-          paymentsRef.get().then(paymentSnap => {
-            paymentSnap.forEach(paymentDoc => {
-              const payment = paymentDoc.data();
-
-              table.innerHTML += `
-                <tr>
-                  <td>${payment.week || '-'}</td>
-                  <td>${payment.month || '-'}</td>
-                  <td>${payment.amount || '0'}</td>
-                  <td>${payment.status || '-'}</td>
-                  <td>${userName}</td>
-                </tr>
-              `;
-            });
-          })
-        );
-      });
-
-      Promise.all(promises).then(() => {
-        console.log("Payment history loaded.");
-      });
     });
-  }
-
-  // Add call inside auth check so it loads after user is verified
-  auth.onAuthStateChanged(user => {
-    if (!user) window.location.href = 'index.html';
-    else {
-      loadUsers();
-      loadSubmissions();
-      loadPaymentHistory(); // <-- new line added here
-    }
-  });
-
   </script>
 </body>
 </html>
