@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ebook Submission Portal</title>
+  <style>
+    :root {
+      --primary: #4361ee;
+      --secondary: #3f37c9;
+      --danger: #f72585;
+      --dark: #212529;
+      --light: #f8f9fa;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: var(--light);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .login-container {
+      width: 100%;
+      max-width: 400px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+
+    .logo-container {
+      background: var(--primary);
+      padding: 30px;
+      text-align: center;
+    }
+
+    .logo-container img {
+      max-width: 150px;
+      height: auto;
+    }
+
+    .login-form {
+      padding: 30px;
+    }
+
+    h2 {
+      color: var(--dark);
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--dark);
+      font-weight: 500;
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 12px 15px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 16px;
+      transition: border 0.3s;
+    }
+
+    .form-group input::placeholder {
+      color: #aaa;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 5px;
+      background: var(--primary);
+      color: white;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .btn:hover {
+      background: var(--secondary);
+    }
+
+    .error-message {
+      color: var(--danger);
+      margin-top: 10px;
+      text-align: center;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="logo-container">
+      <!-- Replace with your logo -->
+      <img src="assets/logo.png" alt="Ebook Portal Logo" />
+    </div>
+    <div class="login-form">
+      <h2>Login to Your Account</h2>
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" placeholder="example@mail.com" required />
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" placeholder="Enter your password" required />
+        </div>
+        <div class="form-group">
+          <label for="role">Login As</label>
+          <select id="role" required>
+            <option value="">Select Role</option>
+            <option value="admin">Admin</option>
+            <option value="user">User</option>
+          </select>
+        </div>
+        <button type="submit" class="btn">Login</button>
+        <div id="errorMessage" class="error-message"></div>
+        <div style="text-align: center; margin-top: 20px;">
+            <span style="font-size: 14px; color: #555;">Don't have an account?</span><br/>
+            <button onclick="window.location.href='signup.html'" class="btn" style="background: var(--secondary); margin-top: 10px;">Sign Up</button>    <!-- 🚀 Signup Button -->
+
+          </div>
+      </form>
+    </div>
+  </div>
+
+  
+<!-- ... (rest of your HTML above remains unchanged) ... -->
+
+
+  
+    
+  
+  
+  <!-- ... (rest of your script section remains unchanged) ... -->
+  
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // 🔐 Firebase config
+      const firebaseConfig = {
+        apiKey: "AIzaSyCa901ltphAF64KQGZwg7AdZjkJojrM03E",
+        authDomain: "weekly-ebook.firebaseapp.com",
+        projectId: "weekly-ebook",
+        storageBucket: "weekly-ebook.firebasestorage.app",
+        messagingSenderId: "37588940522",
+        appId: "1:37588940522:web:cc57a88d8fabce89e44993"
+      };
+
+      // Initialize Firebase
+      if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+      }
+
+      const auth = firebase.auth();
+      const db = firebase.firestore();
+
+      // 🔐 Handle Login
+      document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const role = document.getElementById('role').value;
+        const errorMessage = document.getElementById('errorMessage');
+
+        try {
+          errorMessage.textContent = '';
+
+          const userCredential = await auth.signInWithEmailAndPassword(email, password);
+          const uid = userCredential.user.uid;
+          const userDoc = await db.collection('users').doc(uid).get();
+
+          if (userDoc.exists) {
+            const userRole = userDoc.data().role;
+
+            if (userRole === role) {
+              // Redirect based on role
+              window.location.href = role === 'admin' ? 'admin.html' : 'userboard.html';
+            } else {
+              await auth.signOut();
+              errorMessage.textContent = 'Unauthorized role access. Please choose the correct role.';
+            }
+          } else {
+            await auth.signOut();
+            errorMessage.textContent = 'User role not found in database.';
+          }
+        } catch (error) {
+          errorMessage.textContent = error.message;
+          console.error('Login Error:', error);
+        }
+      });
+    });
+  </script>
+</body>
+</html>
