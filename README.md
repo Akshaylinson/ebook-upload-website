@@ -1,5 +1,4 @@
----
-```markdown
+
 # 📚 Weekly eBook Admin Dashboard
 
 A web-based admin dashboard built for managing users, submissions, deadlines, and payments for an eBook platform. Built using **HTML**, **CSS**, **JavaScript**, and **Firebase** for backend services.
