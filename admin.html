@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Admin Dashboard</title>
   <style>
-
     :root {
       --primary: #4361ee;
       --secondary: #3f37c9;
@@ -148,10 +147,8 @@
       color: var(--dark);
     }
   </style>
-  </style>
 </head>
 <body>
-  <!-- Header -->
   <header>
     <img src="assets/logo.png" alt="Logo">
     <h1>Admin Dashboard</h1>
@@ -159,9 +156,7 @@
     <button class="logout" onclick="logout()">Logout</button>
   </header>
 
-  <!-- Main container -->
   <div class="container">
-    <!-- Dashboard Stats -->
     <div class="card">
       <div><h3>Total Users</h3><span id="totalUsers">0</span></div>
       <div><h3>Total Submissions</h3><span id="totalSub">0</span></div>
@@ -169,14 +164,12 @@
       <div><h3>Rejected</h3><span id="rejectedCount">0</span></div>
     </div>
 
-    <!-- Deadline Section -->
     <div class="section">
       <h2>Set Submission Deadline</h2>
       <input type="date" id="deadlineDate">
       <button onclick="setDeadline()">Set Deadline</button>
     </div>
 
-    <!-- User List -->
     <div class="section">
       <h2>User List</h2>
       <table>
@@ -187,7 +180,6 @@
       </table>
     </div>
 
-    <!-- Submissions -->
     <div class="section">
       <h2>Submission List</h2>
       <table>
@@ -208,7 +200,6 @@
       </table>
     </div>
 
-    <!-- Payment -->
     <div class="section">
       <h2>Payment Status</h2>
       <input type="text" id="weekNo" placeholder="Week No">
@@ -222,7 +213,6 @@
       <button onclick="addPayment()">Add Payment</button>
     </div>
 
-    <!-- Payment History -->
     <div class="section">
       <h2>Payment History</h2>
       <table>
@@ -233,6 +223,7 @@
             <th>Amount Paid</th>
             <th>Status</th>
             <th>User Name</th>
+            <th>Action</th>
           </tr>
         </thead>
         <tbody id="paymentTable"></tbody>
@@ -345,19 +336,13 @@
           if (uid) {
             if (!userCache[uid]) {
               const userDoc = await db.collection('users').doc(uid).get();
-              if (userDoc.exists) {
-                userCache[uid] = userDoc.data().name || userDoc.data().email || 'Unnamed';
-              } else {
-                userCache[uid] = 'Not Found';
-              }
+              userCache[uid] = userDoc.exists ? userDoc.data().name || userDoc.data().email : 'Not Found';
             }
             userName = userCache[uid];
           }
 
-          let statusClass = '';
-          if (sub.status === 'Approved') statusClass = 'status-approved';
-          else if (sub.status === 'Rejected') statusClass = 'status-rejected';
-          else statusClass = 'status-pending';
+          let statusClass = sub.status === 'Approved' ? 'status-approved' :
+                            sub.status === 'Rejected' ? 'status-rejected' : 'status-pending';
 
           table.innerHTML += `
             <tr>
@@ -439,6 +424,7 @@
                     <td>${payment.amount || '0'}</td>
                     <td>${payment.status || '-'}</td>
                     <td>${userName}</td>
+                    <td><button onclick="deletePayment('${uid}', '${paymentDoc.id}')">Delete</button></td>
                   </tr>
                 `;
               });
@@ -452,7 +438,20 @@
       });
     }
 
-    // ✅ Auth check + data loading
+    function deletePayment(uid, paymentId) {
+      if (confirm("Are you sure you want to delete this payment entry?")) {
+        db.collection('users').doc(uid).collection('payments').doc(paymentId).delete()
+          .then(() => {
+            alert('Payment deleted successfully.');
+            loadPaymentHistory();
+          })
+          .catch(error => {
+            console.error("Error deleting payment: ", error);
+            alert('Error deleting payment.');
+          });
+      }
+    }
+
     auth.onAuthStateChanged(user => {
       if (!user) {
         window.location.href = 'index.html';
